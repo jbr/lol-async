@@ -20,8 +20,8 @@ this library in an async context that expects most futures to be
 and a [`LolReader`] that is [`AsyncRead`] and can be moved around and
 sent between threads as needed.
 
-## ❗ Due to this design, it is necessary to poll the [`LolFuture`] in
-addition to reading from the [`LolReader`] ❗
+❗ **Due to this design, it is necessary to poll the [`LolFuture`] in
+addition to reading from the [`LolReader`]** ❗
 
 ## Improvements
 
@@ -39,7 +39,10 @@ know someone at cloudflare, maybe arms can be twisted to adapt
 use lol_async::html::{element, html_content::ContentType, Settings};
 # block_on(async {
 let (fut, mut reader) = lol_async::rewrite(
-    Cursor::new("<html><head><title>hello lol</title></head><body><h1>hey there</h1></body></html>"),
+    Cursor::new(r#"<html>
+<head><title>hello lol</title></head>
+<body><h1>hey there</h1></body>
+</html>"#),
     Settings {
         element_content_handlers: vec![element!("h1", |el| {
             el.append("<span>this was inserted</span>", ContentType::Html);
@@ -53,7 +56,10 @@ let handle = spawn_local(fut);
 let mut buf = String::new();
 reader.read_to_string(&mut buf).await.unwrap();
 handle.await.unwrap();
-assert_eq!(buf, "<html><head><title>hello lol</title></head><body><h1>hey there<span>this was inserted</span></h1></body></html>");
+assert_eq!(buf, r#"<html>
+<head><title>hello lol</title></head>
+<body><h1>hey there<span>this was inserted</span></h1></body>
+</html>"#);
 # });
 ```
 
