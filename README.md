@@ -21,7 +21,7 @@ To get started, see [the api docs][docs].
 [crate]: https://crates.io/crates/lol-async
 [docs-badge]: https://img.shields.io/badge/docs-latest-blue.svg?style=flat-square
 [version-badge]: https://img.shields.io/crates/v/lol-async.svg?style=flat-square
-[main-docs]: https://jbr.github.io/lol-async/lol-async/
+[main-docs]: https://jbr.github.io/lol-async/lol_async/
 [lol-html]: https://github.com/cloudflare/lol-html
 
 ## Safety
