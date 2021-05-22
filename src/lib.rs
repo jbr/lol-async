@@ -95,7 +95,7 @@ impl<R> Debug for LolFuture<'_, R> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("LolFuture")
             .field("buffer", &self.buffer)
-            .finish_non_exhaustive()
+            .finish()
     }
 }
 
@@ -117,7 +117,7 @@ impl Debug for LolReader {
         f.debug_struct("LolReader")
             .field("waker", &self.waker)
             .field("done", &self.done)
-            .finish_non_exhaustive()
+            .finish()
     }
 }
 
