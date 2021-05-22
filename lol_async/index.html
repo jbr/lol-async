@@ -1,0 +1,61 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="This crate is an effort to adapt `cloudflare/lol-html` for an async context. Unfortunately, due to lol-html’s design, the wrapped api is not ideal. In particular, the [`lol_html::HtmlRewriter`] is `!Send`, which means that we have some contortions in order to use this library in an async context that expects most futures to be `Send`. This crate addresses this by returning two types: A [`LolFuture`] that must be polled on whatever thread calls [`rewrite`] and a [`LolReader`] that is [`AsyncRead`] and can be moved around and sent between threads as needed."><meta name="keywords" content="rust, rustlang, rust-lang, lol_async"><title>lol_async - Rust</title><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../ayu.css" disabled ><script id="default-settings"></script><script src="../storage.js"></script><script src="../crates.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="alternate icon" type="image/png" href="../favicon-16x16.png">
+<link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../down-arrow.svg");}</style></head><body class="rustdoc mod"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../lol_async/index.html'><div class='logo-container rust-logo'><img src='../rust-logo.png' alt='logo'></div></a><p class="location">Crate lol_async</p><div class="block version"><p>Version 0.1.0</p></div><div class="sidebar-elems"><a id="all-types" href="all.html"><p>See all lol_async's items</p></a><div class="block items"><ul><li><a href="#reexports">Re-exports</a></li><li><a href="#structs">Structs</a></li><li><a href="#functions">Functions</a></li></ul></div><p class="location"></p><div id="sidebar-vars" data-name="lol_async" data-ty="mod" data-relpath="../"></div></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><script src="../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
+                <a id="settings-menu" href="../settings.html"><img src="../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class="fqn"><span class="in-band">Crate <a class="mod" href="">lol_async</a></span><span class="out-of-band"><span id="render-detail"><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span><a class="srclink" href="../src/lol_async/lib.rs.html#1-226" title="goto source code">[src]</a></span></h1><div class="docblock"><p>This crate is an effort to adapt
+<a href="https://github.com/cloudflare/lol-html"><code>cloudflare/lol-html</code></a> for an
+async context. Unfortunately, due to lol-html’s design, the wrapped
+api is not ideal. In particular, the <a href="../lol_html/rewriter/struct.HtmlRewriter.html" title="lol_html::HtmlRewriter"><code>lol_html::HtmlRewriter</code></a> is
+<code>!Send</code>, which means that we have some contortions in order to use
+this library in an async context that expects most futures to be
+<code>Send</code>. This crate addresses this by returning two types: A
+<a href="../lol_async/struct.LolFuture.html" title="LolFuture"><code>LolFuture</code></a> that must be polled on whatever thread calls <a href="../lol_async/fn.rewrite.html" title="rewrite"><code>rewrite</code></a>
+and a <a href="../lol_async/struct.LolReader.html" title="LolReader"><code>LolReader</code></a> that is <a href="../futures_io/if_std/trait.AsyncRead.html" title="AsyncRead"><code>AsyncRead</code></a> and can be moved around and
+sent between threads as needed.</p>
+<h2 id="-due-to-this-design-it-is-necessary-to-poll-the-lolfuture-in" class="section-header"><a href="#-due-to-this-design-it-is-necessary-to-poll-the-lolfuture-in">❗ Due to this design, it is necessary to poll the <code>LolFuture</code> in</a></h2>
+<p>addition to reading from the <a href="../lol_async/struct.LolReader.html" title="LolReader"><code>LolReader</code></a> ❗</p>
+<h2 id="improvements" class="section-header"><a href="#improvements">Improvements</a></h2>
+<p>Improvements to the design of this crate are very welcome. I don’t
+have a lot of experience working around <code>!Send</code> types in an async
+context, and although this crate achieved the result I needed, I hate
+it. Please open a PR or write a better crate! Alternatively, if you
+know someone at cloudflare, maybe arms can be twisted to adapt
+<code>lol-html</code> for async rust.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+
+<span class="kw">use</span> <span class="ident">lol_async</span>::<span class="ident">html</span>::{<span class="ident">element</span>, <span class="ident">html_content</span>::<span class="ident">ContentType</span>, <span class="ident">Settings</span>};
+<span class="kw">let</span> (<span class="ident">fut</span>, <span class="kw-2">mut</span> <span class="ident">reader</span>) <span class="op">=</span> <span class="ident">lol_async</span>::<span class="ident">rewrite</span>(
+    <span class="ident">Cursor</span>::<span class="ident">new</span>(<span class="string">&quot;&lt;html&gt;&lt;head&gt;&lt;title&gt;hello lol&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;hey there&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;&quot;</span>),
+    <span class="ident">Settings</span> {
+        <span class="ident">element_content_handlers</span>: <span class="macro">vec</span><span class="macro">!</span>[<span class="macro">element</span><span class="macro">!</span>(<span class="string">&quot;h1&quot;</span>, <span class="op">|</span><span class="ident">el</span><span class="op">|</span> {
+            <span class="ident">el</span>.<span class="ident">append</span>(<span class="string">&quot;&lt;span&gt;this was inserted&lt;/span&gt;&quot;</span>, <span class="ident">ContentType</span>::<span class="ident">Html</span>);
+            <span class="prelude-val">Ok</span>(())
+        })],
+        ..<span class="ident">Settings</span>::<span class="ident">default</span>()
+    }
+);
+
+<span class="kw">let</span> <span class="ident">handle</span> <span class="op">=</span> <span class="ident">spawn_local</span>(<span class="ident">fut</span>);
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">String</span>::<span class="ident">new</span>();
+<span class="ident">reader</span>.<span class="ident">read_to_string</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">buf</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
+<span class="ident">handle</span>.<span class="kw">await</span>.<span class="ident">unwrap</span>();
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">buf</span>, <span class="string">&quot;&lt;html&gt;&lt;head&gt;&lt;title&gt;hello lol&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;hey there&lt;span&gt;this was inserted&lt;/span&gt;&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;&quot;</span>);</pre></div>
+</div><h2 id="reexports" class="section-header"><a href="#reexports">Re-exports</a></h2>
+<table><tr><td><code>pub use <a class="mod" href="../lol_html/index.html" title="mod lol_html">lol_html</a> as html;</code></td></tr></table><h2 id="structs" class="section-header"><a href="#structs">Structs</a></h2>
+<table><tr class="module-item"><td><a class="struct" href="struct.LolFuture.html" title="lol_async::LolFuture struct">LolFuture</a></td><td class="docblock-short"><p><code>await</code> this <a href="https://doc.rust-lang.org/nightly/core/future/future/trait.Future.html" title="Future"><code>Future</code></a> to drive the html rewriting process. The
+LolFuture contains the <a href="../lol_html/rewriter/struct.HtmlRewriter.html" title="HtmlRewriter"><code>HtmlRewriter</code></a> and as a result is
+<code>!Send</code>, so it must be spawned locally.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.LolReader.html" title="lol_async::LolReader struct">LolReader</a></td><td class="docblock-short"><p>An <a href="../futures_io/if_std/trait.AsyncRead.html" title="AsyncRead"><code>AsyncRead</code></a> type that will yield the rewritten html. LolReader is
+Send, allowing it to be used on a different thread from the paired
+<a href="../lol_async/struct.LolFuture.html" title="LolFuture"><code>LolFuture</code></a>. Please note that reading from LolReader does not drive the
+LolHtml rewriter. Awaiting the <a href="../lol_async/struct.LolFuture.html" title="LolFuture"><code>LolFuture</code></a> is also necessary.</p>
+</td></tr></table><h2 id="functions" class="section-header"><a href="#functions">Functions</a></h2>
+<table><tr class="module-item"><td><a class="fn" href="fn.rewrite.html" title="lol_async::rewrite fn">rewrite</a></td><td class="docblock-short"><p>This function is the primary entrypoint for <code>lol-async</code>. It takes a
+data <code>Source</code> that is <a href="../futures_io/if_std/trait.AsyncRead.html" title="AsyncRead"><code>AsyncRead</code></a> and a <a href="../lol_html/rewriter/settings/struct.Settings.html" title="Settings"><code>Settings</code></a> that describes
+the desired rewriting logic. It returns a !Send <a href="../lol_async/struct.LolFuture.html" title="LolFuture"><code>LolFuture</code></a> future
+that drives the rewriter on the current thread and a <a href="../lol_async/struct.LolReader.html" title="LolReader"><code>LolReader</code></a>
+that is Send and can be used anywhere an <a href="../futures_io/if_std/trait.AsyncRead.html" title="AsyncRead"><code>AsyncRead</code></a> would be
+used. The html content yielded by the <a href="../lol_async/struct.LolReader.html" title="LolReader"><code>LolReader</code></a> will be rewritten
+according to the rules specified in the Settings.</p>
+</td></tr></table></section><section id="search" class="content hidden"></section><section class="footer"></section><div id="rustdoc-vars" data-root-path="../" data-current-crate="lol_async" data-search-js="../search-index.js"></div>
+    <script src="../main.js"></script></body></html>

@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["move_items","Moves at most `count` items from the `src` consumer to the `dst` producer. Consumer and producer may be of different buffers as well as of the same one."]],"struct":[["Consumer","Consumer part of ring buffer."],["Producer","Producer part of ring buffer."],["RingBuffer","Ring buffer itself."]]});
