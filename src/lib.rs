@@ -175,8 +175,8 @@ where
 
     let reader = LolReader {
         waker,
-        receiver,
         done,
+        receiver,
     };
 
     (future, reader)
