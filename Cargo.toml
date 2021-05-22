@@ -3,12 +3,14 @@ name = "lol-async"
 version = "0.1.0"
 authors = ["Jacob Rothstein <hi@jbr.me>"]
 edition = "2018"
+license = "MIT OR Apache-2.0"
+documentation = "https://docs.rs/lol-async"
+repository = "https://github.com/jbr/lol-async"
+description = "async html-rewriter"
 
 [dependencies]
 futures-lite = "1.11.3"
-parking_lot = "0.11.1"
 pin-project-lite = "0.2.6"
-async-channel = "1.6.1"
 atomic-waker = "1.0.0"
 ringbuf = "0.2.3"
 lol_html = "0.3.0"
