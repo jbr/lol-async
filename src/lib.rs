@@ -33,11 +33,11 @@ know someone at cloudflare, maybe arms can be twisted to adapt
 `lol-html` for async rust.
 
 ```
-# use async_global_executor::{block_on, spawn_local};
+# use async_global_executor as your_async_executor;
 # use futures_lite::{io::Cursor, AsyncReadExt};
-
 use lol_async::html::{element, html_content::ContentType, Settings};
-# block_on(async {
+
+# your_async_executor::block_on(async {
 let (fut, mut reader) = lol_async::rewrite(
     Cursor::new(r#"<html>
 <head><title>hello lol</title></head>
@@ -52,15 +52,17 @@ let (fut, mut reader) = lol_async::rewrite(
     }
 );
 
-let handle = spawn_local(fut);
+let handle = your_async_executor::spawn_local(fut);
+
 let mut buf = String::new();
-reader.read_to_string(&mut buf).await.unwrap();
-handle.await.unwrap();
+reader.read_to_string(&mut buf).await?;
+
+handle.await?;
 assert_eq!(buf, r#"<html>
 <head><title>hello lol</title></head>
 <body><h1>hey there<span>this was inserted</span></h1></body>
 </html>"#);
-# });
+# Result::<_, Box<dyn std::error::Error>>::Ok(()) }).unwrap();
 ```
 
 
