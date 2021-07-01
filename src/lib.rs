@@ -220,7 +220,7 @@ impl AsyncRead for LolReader {
             buf[..len].copy_from_slice(&data);
             Poll::Ready(Ok(len))
         } else if self.done.load(Ordering::SeqCst) {
-            return Poll::Ready(Ok(0));
+            Poll::Ready(Ok(0))
         } else {
             self.waker.register(cx.waker());
             Poll::Pending
