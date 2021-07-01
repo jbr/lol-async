@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Removable","A shared removable value. You can only take values from this type (no insertion allowed). No extra allocation is necessary. It may be useful for things like shared `thread::JoinHandle`s."]]});

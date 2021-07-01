@@ -1,0 +1,145 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `&#x2F;home&#x2F;runner&#x2F;.cargo&#x2F;registry&#x2F;src&#x2F;github.com-1ecc6299db9ec823&#x2F;lockfree-0.5.1&#x2F;src&#x2F;lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../favicon.svg"><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../lockfree/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="18" height="18" alt="Pick another theme!" src="../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input"name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img width="18" height="18" alt="Change settings" src="../../wheel.svg"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1"> 1</span>
+<span id="2"> 2</span>
+<span id="3"> 3</span>
+<span id="4"> 4</span>
+<span id="5"> 5</span>
+<span id="6"> 6</span>
+<span id="7"> 7</span>
+<span id="8"> 8</span>
+<span id="9"> 9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+</pre><pre class="rust">
+<span class="attribute">#![<span class="ident">warn</span>(<span class="ident">missing_docs</span>)]</span>
+<span class="doccomment">//! A crate providing lock-free data structures and a solution for the &quot;ABA</span>
+<span class="doccomment">//! problem&quot; related to pointers.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! The incinerator is the API which tries to solve the &quot;ABA problem&quot; when</span>
+<span class="doccomment">//! related to pointer dropping. With incinerator, every thread has a local</span>
+<span class="doccomment">//! garbage list. Dropping a shared object consist of first removing the pointer</span>
+<span class="doccomment">//! from the shared context, then adding the pointer to the garbage list.</span>
+<span class="doccomment">//! A &quot;pause counter&quot; is checked. If the counter is zero, then the whole list</span>
+<span class="doccomment">//! is deleted, otherwise, the list will only be deleted later.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! This counter is counting how many times the incinerator was asked to</span>
+<span class="doccomment">//! &quot;pause&quot;. A thread may pause the incinerator to load and use the shared</span>
+<span class="doccomment">//! pointer, and this is why it is important to remove the pointer from the</span>
+<span class="doccomment">//! shared context before deleting. Previous version of lockfree used a global</span>
+<span class="doccomment">//! incinerator. Currently, a per-object incinerator is used.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! This crate is under development, and there are plans for some structures.</span>
+<span class="doccomment">//! We have:</span>
+<span class="doccomment">//! - `[x]` [Per-Object Thread-Local Storage](tls::ThreadLocal)</span>
+<span class="doccomment">//! - `[x]` [Channels (SPSC, MPSC, SPMC, MPMC)](channel)</span>
+<span class="doccomment">//! - `[x]` [Map](map::Map)</span>
+<span class="doccomment">//! - `[x]` [Set](set::Set)</span>
+<span class="doccomment">//! - `[x]` [Stack](stack::Stack)</span>
+<span class="doccomment">//! - `[x]` [Queue](queue::Queue)</span>
+<span class="doccomment">//! - `[ ]` Deque</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! # Performance Guide</span>
+<span class="doccomment">//! In order to achieve a better time performance with lockfree, it is</span>
+<span class="doccomment">//! recommended to avoid global locking stuff like heap allocation.</span>
+
+<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">owned_alloc</span>;
+
+<span class="doccomment">/// Provides convenient re-exports.</span>
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">prelude</span>;
+
+<span class="doccomment">/// Incinerator API. The purpouse of this module is to solve the &quot;ABA problem&quot;</span>
+<span class="doccomment">/// related to pointers while still being lock-free. See documentation of the</span>
+<span class="doccomment">/// inner type for more details.</span>
+<span class="attribute">#[<span class="ident">macro_use</span>]</span>
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">incin</span>;
+
+<span class="doccomment">/// A wait-free per-object Thread Local Storage (TLS).</span>
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">tls</span>;
+
+<span class="doccomment">/// A lock-free queue.</span>
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">queue</span>;
+
+<span class="doccomment">/// A lock-free stack.</span>
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">stack</span>;
+
+<span class="doccomment">/// A lock-free map.</span>
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">map</span>;
+
+<span class="doccomment">/// A lock-free set.</span>
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">set</span>;
+
+<span class="doccomment">/// Collection of lock-free FIFO channels. These channels are fully asynchronous</span>
+<span class="doccomment">/// and their receivers do not provide any sort of `wait-for-message` operation.</span>
+<span class="doccomment">/// It would be blocking otherwise, thus not lock-free. If you need such a</span>
+<span class="doccomment">/// mechanism, consider using this channel with a</span>
+<span class="doccomment">/// [`Condvar`](std::sync::Condvar) or using things like</span>
+<span class="doccomment">/// [`thread::park`](std::thread::park) (not lock-free).</span>
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">channel</span>;
+
+<span class="doccomment">/// A shared removable value. No extra allocation is necessary.</span>
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">removable</span>;
+
+<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
+<span class="kw">mod</span> <span class="ident">ptr</span>;
+</pre></div>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lockfree" data-search-index-js="../../search-index.js" data-search-js="../../search.js"></div>
+    <script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script>
+</body></html>

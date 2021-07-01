@@ -1,0 +1,47 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A crate providing lock-free data structures and a solution for the “ABA problem” related to pointers."><meta name="keywords" content="rust, rustlang, rust-lang, lockfree"><title>lockfree - Rust</title><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../ayu.css" disabled ><script id="default-settings" ></script><script src="../storage.js"></script><script src="../crates.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../favicon.svg"><link rel="alternate icon" type="image/png" href="../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../down-arrow.svg");}</style></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../lockfree/index.html'><div class='logo-container rust-logo'><img src='../rust-logo.png' alt='logo'></div></a><p class="location">Crate lockfree</p><div class="block version"><div class="narrow-helper"></div><p>Version 0.5.1</p></div><div class="sidebar-elems"><a id="all-types" href="all.html"><p>See all lockfree's items</p></a><div class="block items"><ul><li><a href="#modules">Modules</a></li></ul></div><div id="sidebar-vars" data-name="lockfree" data-ty="mod" data-relpath=""></div><script defer src="sidebar-items.js"></script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="18" height="18" alt="Pick another theme!" src="../brush.svg"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input"name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../settings.html" title="settings"><img width="18" height="18" alt="Change settings" src="../wheel.svg"></a></div></form></nav><section id="main" class="content"><h1 class="fqn"><span class="in-band">Crate <a class="mod" href="#">lockfree</a><button id="copy-path" onclick="copy_path(this)" title="copy path"><img src="../clipboard.svg" width="19" height="18" alt="Copy item import" title="Copy item import to clipboard"></button></span><span class="out-of-band"><span id="render-detail"><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span><a class="srclink" href="../src/lockfree/lib.rs.html#1-70" title="goto source code">[src]</a></span></h1><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>A crate providing lock-free data structures and a solution for the “ABA
+problem” related to pointers.</p>
+<p>The incinerator is the API which tries to solve the “ABA problem” when
+related to pointer dropping. With incinerator, every thread has a local
+garbage list. Dropping a shared object consist of first removing the pointer
+from the shared context, then adding the pointer to the garbage list.
+A “pause counter” is checked. If the counter is zero, then the whole list
+is deleted, otherwise, the list will only be deleted later.</p>
+<p>This counter is counting how many times the incinerator was asked to
+“pause”. A thread may pause the incinerator to load and use the shared
+pointer, and this is why it is important to remove the pointer from the
+shared context before deleting. Previous version of lockfree used a global
+incinerator. Currently, a per-object incinerator is used.</p>
+<p>This crate is under development, and there are plans for some structures.
+We have:</p>
+<ul>
+<li><code>[x]</code> <a href="tls/struct.ThreadLocal.html">Per-Object Thread-Local Storage</a></li>
+<li><code>[x]</code> <a href="channel/index.html">Channels (SPSC, MPSC, SPMC, MPMC)</a></li>
+<li><code>[x]</code> <a href="map/struct.Map.html">Map</a></li>
+<li><code>[x]</code> <a href="set/struct.Set.html">Set</a></li>
+<li><code>[x]</code> <a href="stack/struct.Stack.html">Stack</a></li>
+<li><code>[x]</code> <a href="queue/struct.Queue.html">Queue</a></li>
+<li><code>[ ]</code> Deque</li>
+</ul>
+<h1 id="performance-guide" class="section-header"><a href="#performance-guide">Performance Guide</a></h1>
+<p>In order to achieve a better time performance with lockfree, it is
+recommended to avoid global locking stuff like heap allocation.</p>
+</div></details><h2 id="modules" class="section-header"><a href="#modules">Modules</a></h2>
+<div class="item-table"><div class="item-left module-item"><a class="mod" href="channel/index.html" title="lockfree::channel mod">channel</a></div><div class="item-right docblock-short"><p>Collection of lock-free FIFO channels. These channels are fully asynchronous
+and their receivers do not provide any sort of <code>wait-for-message</code> operation.
+It would be blocking otherwise, thus not lock-free. If you need such a
+mechanism, consider using this channel with a
+<a href="https://doc.rust-lang.org/nightly/std/sync/condvar/struct.Condvar.html"><code>Condvar</code></a> or using things like
+<a href="https://doc.rust-lang.org/nightly/std/thread/fn.park.html"><code>thread::park</code></a> (not lock-free).</p>
+</div><div class="item-left module-item"><a class="mod" href="incin/index.html" title="lockfree::incin mod">incin</a></div><div class="item-right docblock-short"><p>Incinerator API. The purpouse of this module is to solve the “ABA problem”
+related to pointers while still being lock-free. See documentation of the
+inner type for more details.</p>
+</div><div class="item-left module-item"><a class="mod" href="map/index.html" title="lockfree::map mod">map</a></div><div class="item-right docblock-short"><p>A lock-free map.</p>
+</div><div class="item-left module-item"><a class="mod" href="prelude/index.html" title="lockfree::prelude mod">prelude</a></div><div class="item-right docblock-short"><p>Provides convenient re-exports.</p>
+</div><div class="item-left module-item"><a class="mod" href="queue/index.html" title="lockfree::queue mod">queue</a></div><div class="item-right docblock-short"><p>A lock-free queue.</p>
+</div><div class="item-left module-item"><a class="mod" href="removable/index.html" title="lockfree::removable mod">removable</a></div><div class="item-right docblock-short"><p>A shared removable value. No extra allocation is necessary.</p>
+</div><div class="item-left module-item"><a class="mod" href="set/index.html" title="lockfree::set mod">set</a></div><div class="item-right docblock-short"><p>A lock-free set.</p>
+</div><div class="item-left module-item"><a class="mod" href="stack/index.html" title="lockfree::stack mod">stack</a></div><div class="item-right docblock-short"><p>A lock-free stack.</p>
+</div><div class="item-left module-item"><a class="mod" href="tls/index.html" title="lockfree::tls mod">tls</a></div><div class="item-right docblock-short"><p>A wait-free per-object Thread Local Storage (TLS).</p>
+</div></div></section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../" data-current-crate="lockfree" data-search-index-js="../search-index.js" data-search-js="../search.js"></div>
+    <script src="../main.js"></script>
+</body></html>

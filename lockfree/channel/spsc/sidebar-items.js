@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["create","Creates an asynchronous lock-free Single-Producer-Single-Consumer (SPSC) channel."]],"struct":[["Receiver","The [`Receiver`] handle of a SPSC channel. Created by [`create`] function."],["Sender","The `Sender` handle of a SPSC channel. Created by [`create`] function."]]});
