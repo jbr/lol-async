@@ -12,8 +12,8 @@ description = "async html-rewriter"
 futures-lite = "1.11.3"
 pin-project-lite = "0.2.6"
 atomic-waker = "1.0.0"
-ringbuf = "0.2.3"
 lol_html = "0.3.0"
+lockfree = "0.5.1"
 
 [dev-dependencies]
 async-executor = "1.4.0"

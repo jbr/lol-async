@@ -69,9 +69,9 @@ assert_eq!(buf, r#"<html>
 */
 use atomic_waker::AtomicWaker;
 use futures_lite::{ready, AsyncRead};
+use lockfree::queue::Queue;
 use lol_html::{HtmlRewriter, OutputSink, Settings};
 use pin_project_lite::pin_project;
-use ringbuf::{Consumer, Producer, RingBuffer};
 use std::{
     fmt::{self, Debug},
     future::Future,
@@ -86,23 +86,19 @@ use std::{
 
 pub use lol_html as html;
 
-pin_project! {
-    /**
-    `await` this [`Future`] to drive the html rewriting process. The
-    LolFuture contains the [`HtmlRewriter`] and as a result is
-    `!Send`, so it must be spawned locally.
-    */
-    pub struct LolFuture<'h, R> {
-        #[pin] source: R,
-        rewriter: Option<HtmlRewriter<'h, LolOutputter>>,
-        buffer: Vec<u8>
-    }
-}
-
 impl<R> Debug for LolFuture<'_, R> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("LolFuture")
             .field("buffer", &self.buffer)
+            .finish()
+    }
+}
+
+impl Debug for LolReader {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LolReader")
+            .field("waker", &self.waker)
+            .field("done", &self.done)
             .finish()
     }
 }
@@ -117,33 +113,25 @@ LolHtml rewriter. Awaiting the [`LolFuture`] is also necessary.
 pub struct LolReader {
     waker: Arc<AtomicWaker>,
     done: Arc<AtomicBool>,
-    receiver: Consumer<u8>,
-}
-
-impl Debug for LolReader {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("LolReader")
-            .field("waker", &self.waker)
-            .field("done", &self.done)
-            .finish()
-    }
+    data: Arc<Queue<u8>>,
 }
 
 struct LolOutputter {
     done: Arc<AtomicBool>,
     waker: Arc<AtomicWaker>,
-    sender: Producer<u8>,
+    data: Arc<Queue<u8>>,
 }
 
-impl OutputSink for LolOutputter {
-    fn handle_chunk(&mut self, chunk: &[u8]) {
-        if chunk.is_empty() {
-            self.done.store(true, Ordering::SeqCst);
-        } else {
-            self.sender.push_slice(chunk);
-        }
-
-        self.waker.wake();
+pin_project! {
+    /**
+    `await` this [`Future`] to drive the html rewriting process. The
+    LolFuture contains the [`HtmlRewriter`] and as a result is
+    `!Send`, so it must be spawned locally.
+    */
+    pub struct LolFuture<'h, R> {
+        #[pin] source: R,
+        rewriter: Option<HtmlRewriter<'h, LolOutputter>>,
+        buffer: Vec<u8>
     }
 }
 
@@ -163,14 +151,14 @@ pub fn rewrite<'h, 's, Source>(
 where
     Source: AsyncRead,
 {
-    let (sender, receiver) = RingBuffer::new(1024 * 8).split();
     let waker = Arc::new(AtomicWaker::new());
     let done = Arc::new(AtomicBool::new(false));
+    let data = Arc::new(Queue::new());
 
     let output_sink = LolOutputter {
         waker: waker.clone(),
         done: done.clone(),
-        sender,
+        data: data.clone(),
     };
 
     let rewriter = HtmlRewriter::new(settings, output_sink);
@@ -181,34 +169,9 @@ where
         buffer: vec![0; 1024],
     };
 
-    let reader = LolReader {
-        waker,
-        done,
-        receiver,
-    };
+    let reader = LolReader { waker, done, data };
 
     (future, reader)
-}
-
-impl AsyncRead for LolReader {
-    fn poll_read(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut [u8],
-    ) -> Poll<Result<usize>> {
-        if self.receiver.is_empty() && self.done.load(Ordering::SeqCst) {
-            return Poll::Ready(Ok(0));
-        }
-
-        match self.receiver.pop_slice(buf) {
-            0 => {
-                self.waker.register(cx.waker());
-                Poll::Pending
-            }
-
-            ready_bytes => Poll::Ready(Ok(ready_bytes)),
-        }
-    }
 }
 
 impl<Source: AsyncRead> Future for LolFuture<'_, Source> {
@@ -229,6 +192,38 @@ impl<Source: AsyncRead> Future for LolFuture<'_, Source> {
 
                 None => return Poll::Ready(Ok(())),
             }
+        }
+    }
+}
+
+impl OutputSink for LolOutputter {
+    fn handle_chunk(&mut self, chunk: &[u8]) {
+        if chunk.is_empty() {
+            self.done.store(true, Ordering::SeqCst);
+        } else {
+            self.data.extend(chunk.to_vec());
+        }
+
+        self.waker.wake();
+    }
+}
+
+impl AsyncRead for LolReader {
+    fn poll_read(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &mut [u8],
+    ) -> Poll<Result<usize>> {
+        let data: Vec<u8> = self.data.pop_iter().take(buf.len()).collect();
+        let len = data.len();
+        if len > 0 {
+            buf[..len].copy_from_slice(&data);
+            Poll::Ready(Ok(len))
+        } else if self.done.load(Ordering::SeqCst) {
+            return Poll::Ready(Ok(0));
+        } else {
+            self.waker.register(cx.waker());
+            Poll::Pending
         }
     }
 }
