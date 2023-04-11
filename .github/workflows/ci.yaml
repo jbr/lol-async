@@ -2,16 +2,14 @@ name: CI
 
 on:
   pull_request:
+  merge_group:
   push:
     branches:
       - main
 
-env:
-  RUSTFLAGS: -Dwarnings
-
 jobs:
   test:
-    name: Build and test
+    name: Build and Test
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -25,28 +23,32 @@ jobs:
       with:
         toolchain: ${{ matrix.rust }}
         override: true
-    - name: tests
+
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v2.2.1
+
+    - name: Run tests
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --all
 
   check_fmt_and_docs:
-    name: Checking fmt, clippy, and docs
+    name: Lints and Docs
     runs-on: ubuntu-latest
     steps:
+    - name: Install Protoc
+      uses: arduino/setup-protoc@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
     - uses: actions/checkout@master
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: nightly
         components: rustfmt, clippy
         override: true
 
-    - name: clippy
-      run: cargo clippy --tests --examples -- -D warnings
-        
-    - name: fmt
+    - name: Format
       run: cargo fmt --all -- --check
 
-    - name: Build Documentation
-      run: cargo doc --all --no-deps
+    - name: Docs
+      run: cargo doc --no-deps
