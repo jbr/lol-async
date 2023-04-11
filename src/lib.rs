@@ -144,9 +144,9 @@ that is Send and can be used anywhere an [`AsyncRead`] would be
 used. The html content yielded by the [`LolReader`] will be rewritten
 according to the rules specified in the Settings.
 */
-pub fn rewrite<'h, 's, Source>(
+pub fn rewrite<'h, Source>(
     source: Source,
-    settings: Settings<'h, 's>,
+    settings: Settings<'h, '_>,
 ) -> (LolFuture<'h, Source>, LolReader)
 where
     Source: AsyncRead,
