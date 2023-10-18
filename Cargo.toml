@@ -17,5 +17,5 @@ lockfree = "0.5.1"
 
 [dev-dependencies]
 async-executor = "1.5.1"
-async-io = "1.13.0"
+async-io = "2.0.0"
 async-global-executor = "2.3.1"
