@@ -9,7 +9,7 @@ repository = "https://github.com/jbr/lol-async"
 description = "async html-rewriter"
 
 [dependencies]
-futures-lite = "1.13.0"
+futures-lite = "2.0.0"
 pin-project-lite = "0.2.9"
 atomic-waker = "1.1.1"
 lol_html = "1.0.0"
