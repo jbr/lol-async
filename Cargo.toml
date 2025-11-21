@@ -13,7 +13,7 @@ futures-lite = "1.13.0"
 pin-project-lite = "0.2.9"
 atomic-waker = "1.1.1"
 lol_html = "1.0.0"
-lockfree = "0.5.1"
+lock_freedom = "0.1.1"
 
 [dev-dependencies]
 async-executor = "1.5.1"

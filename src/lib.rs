@@ -69,7 +69,7 @@ assert_eq!(buf, r#"<html>
 */
 use atomic_waker::AtomicWaker;
 use futures_lite::{ready, AsyncRead};
-use lockfree::queue::Queue;
+use lock_freedom::queue::Queue;
 use lol_html::{HtmlRewriter, OutputSink, Settings};
 use pin_project_lite::pin_project;
 use std::{
