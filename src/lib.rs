@@ -48,8 +48,8 @@ assert_eq!(buf, r#"<html>
 ```
 */
 
-use futures_lite::{ready, AsyncRead};
-use lol_html::{send::HtmlRewriter, OutputSink};
+use futures_lite::{AsyncRead, ready};
+use lol_html::{OutputSink, send::HtmlRewriter};
 use pin_project_lite::pin_project;
 use std::{
     collections::VecDeque,

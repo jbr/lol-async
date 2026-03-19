@@ -1,4 +1,4 @@
-use futures_lite::{io::Cursor, AsyncRead, AsyncReadExt};
+use futures_lite::{AsyncRead, AsyncReadExt, io::Cursor};
 use lol_async::{
     html::{element, html_content::ContentType, send::Settings},
     rewrite,

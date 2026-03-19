@@ -2,7 +2,7 @@
 name = "lol-async"
 version = "0.2.0"
 authors = ["Jacob Rothstein <hi@jbr.me>"]
-edition = "2021"
+edition = "2024"
 license = "MIT OR Apache-2.0"
 documentation = "https://docs.rs/lol-async"
 repository = "https://github.com/jbr/lol-async"
