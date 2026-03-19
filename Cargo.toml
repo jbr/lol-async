@@ -9,13 +9,13 @@ repository = "https://github.com/jbr/lol-async"
 description = "async html-rewriter"
 
 [dependencies]
-futures-lite = "1.13.0"
-pin-project-lite = "0.2.9"
-atomic-waker = "1.1.1"
-lol_html = "0.4.0"
+futures-lite = "2.6.1"
+pin-project-lite = "0.2.17"
+atomic-waker = "1.1.2"
+lol_html = "2.7.2"
 lockfree = "0.5.1"
 
 [dev-dependencies]
-async-executor = "1.5.1"
-async-io = "1.13.0"
-async-global-executor = "2.3.1"
+async-executor = "1.14.0"
+async-io = "2.6.0"
+async-global-executor = "3.1.0"
