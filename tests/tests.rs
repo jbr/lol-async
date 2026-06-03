@@ -3,9 +3,11 @@ use lol_async::{
     html::{element, html_content::ContentType, send::Settings},
     rewrite,
 };
-use std::io::Result;
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use std::{
+    io::Result,
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 // -- helpers ------------------------------------------------------------------
 
@@ -28,13 +30,10 @@ fn passthrough_settings() -> Settings<'static, 'static> {
 }
 
 fn simple_append_settings() -> Settings<'static, 'static> {
-    Settings {
-        element_content_handlers: vec![element!("h1", |el| {
-            el.append("<span>inserted</span>", ContentType::Html);
-            Ok(())
-        })],
-        ..Settings::new_send()
-    }
+    Settings::new_send().append_element_content_handler(element!("h1", |el| {
+        el.append("<span>inserted</span>", ContentType::Html);
+        Ok(())
+    }))
 }
 
 /// An AsyncRead that yields `data` in fixed-size chunks, simulating a slow or
@@ -114,13 +113,10 @@ fn element_removal() {
     run(async {
         let mut r = rewrite(
             Cursor::new("<div><span class=\"remove\">gone</span><p>kept</p></div>"),
-            Settings {
-                element_content_handlers: vec![element!("span.remove", |el| {
-                    el.remove();
-                    Ok(())
-                })],
-                ..Settings::new_send()
-            },
+            Settings::new_send().append_element_content_handler(element!("span.remove", |el| {
+                el.remove();
+                Ok(())
+            })),
         );
         let mut buf = String::new();
         r.read_to_string(&mut buf).await.unwrap();
@@ -133,13 +129,10 @@ fn element_replacement() {
     run(async {
         let mut r = rewrite(
             Cursor::new("<div><old>content</old></div>"),
-            Settings {
-                element_content_handlers: vec![element!("old", |el| {
-                    el.replace("<new>replaced</new>", ContentType::Html);
-                    Ok(())
-                })],
-                ..Settings::new_send()
-            },
+            Settings::new_send().append_element_content_handler(element!("old", |el| {
+                el.replace("<new>replaced</new>", ContentType::Html);
+                Ok(())
+            })),
         );
         let mut buf = String::new();
         r.read_to_string(&mut buf).await.unwrap();
@@ -152,13 +145,10 @@ fn set_inner_content() {
     run(async {
         let mut r = rewrite(
             Cursor::new("<p>old</p>"),
-            Settings {
-                element_content_handlers: vec![element!("p", |el| {
-                    el.set_inner_content("new", ContentType::Text);
-                    Ok(())
-                })],
-                ..Settings::new_send()
-            },
+            Settings::new_send().append_element_content_handler(element!("p", |el| {
+                el.set_inner_content("new", ContentType::Text);
+                Ok(())
+            })),
         );
         let mut buf = String::new();
         r.read_to_string(&mut buf).await.unwrap();
@@ -171,14 +161,11 @@ fn attribute_rewriting() {
     run(async {
         let mut r = rewrite(
             Cursor::new(r#"<a href="http://example.com">link</a>"#),
-            Settings {
-                element_content_handlers: vec![element!("a[href]", |el| {
-                    let href = el.get_attribute("href").unwrap().replace("http:", "https:");
-                    el.set_attribute("href", &href).unwrap();
-                    Ok(())
-                })],
-                ..Settings::new_send()
-            },
+            Settings::new_send().append_element_content_handler(element!("a[href]", |el| {
+                let href = el.get_attribute("href").unwrap().replace("http:", "https:");
+                el.set_attribute("href", &href).unwrap();
+                Ok(())
+            })),
         );
         let mut buf = String::new();
         r.read_to_string(&mut buf).await.unwrap();
@@ -191,19 +178,15 @@ fn multiple_handlers() {
     run(async {
         let mut r = rewrite(
             Cursor::new("<h1>title</h1><p>body</p>"),
-            Settings {
-                element_content_handlers: vec![
-                    element!("h1", |el| {
-                        el.set_inner_content("NEW TITLE", ContentType::Text);
-                        Ok(())
-                    }),
-                    element!("p", |el| {
-                        el.before("<hr>", ContentType::Html);
-                        Ok(())
-                    }),
-                ],
-                ..Settings::new_send()
-            },
+            Settings::new_send()
+                .append_element_content_handler(element!("h1", |el| {
+                    el.set_inner_content("NEW TITLE", ContentType::Text);
+                    Ok(())
+                }))
+                .append_element_content_handler(element!("p", |el| {
+                    el.before("<hr>", ContentType::Html);
+                    Ok(())
+                })),
         );
         let mut buf = String::new();
         r.read_to_string(&mut buf).await.unwrap();
@@ -216,14 +199,11 @@ fn before_and_after_insertion() {
     run(async {
         let mut r = rewrite(
             Cursor::new("<p>middle</p>"),
-            Settings {
-                element_content_handlers: vec![element!("p", |el| {
-                    el.before("<!--before-->", ContentType::Html);
-                    el.after("<!--after-->", ContentType::Html);
-                    Ok(())
-                })],
-                ..Settings::new_send()
-            },
+            Settings::new_send().append_element_content_handler(element!("p", |el| {
+                el.before("<!--before-->", ContentType::Html);
+                el.after("<!--after-->", ContentType::Html);
+                Ok(())
+            })),
         );
         let mut buf = String::new();
         r.read_to_string(&mut buf).await.unwrap();
@@ -288,13 +268,10 @@ fn large_input_with_rewriting() {
 
         let mut r = rewrite(
             Cursor::new(html.as_str()),
-            Settings {
-                element_content_handlers: vec![element!("p", |el| {
-                    el.set_attribute("class", "styled").unwrap();
-                    Ok(())
-                })],
-                ..Settings::new_send()
-            },
+            Settings::new_send().append_element_content_handler(element!("p", |el| {
+                el.set_attribute("class", "styled").unwrap();
+                Ok(())
+            })),
         );
         let mut buf = String::new();
         r.read_to_string(&mut buf).await.unwrap();
@@ -371,13 +348,10 @@ fn output_much_larger_than_input() {
         let big_insert_clone = big_insert.clone();
         let mut r = rewrite(
             Cursor::new("<p></p>"),
-            Settings {
-                element_content_handlers: vec![element!("p", move |el| {
-                    el.set_inner_content(&big_insert_clone, ContentType::Text);
-                    Ok(())
-                })],
-                ..Settings::new_send()
-            },
+            Settings::new_send().append_element_content_handler(element!("p", move |el| {
+                el.set_inner_content(&big_insert_clone, ContentType::Text);
+                Ok(())
+            })),
         );
         let mut buf = String::new();
         r.read_to_string(&mut buf).await.unwrap();
@@ -394,13 +368,10 @@ fn output_expansion_small_read_buffer() {
             let insert = big_insert_clone.clone();
             let mut r = rewrite(
                 Cursor::new("<span></span>"),
-                Settings {
-                    element_content_handlers: vec![element!("span", move |el| {
-                        el.set_inner_content(&insert, ContentType::Text);
-                        Ok(())
-                    })],
-                    ..Settings::new_send()
-                },
+                Settings::new_send().append_element_content_handler(element!("span", move |el| {
+                    el.set_inner_content(&insert, ContentType::Text);
+                    Ok(())
+                })),
             );
             let result = read_with_buffers_of_size(&mut r, size).await.unwrap();
             assert_eq!(
@@ -419,12 +390,9 @@ fn handler_error_propagates() {
     run(async {
         let mut r = rewrite(
             Cursor::new("<p>hi</p>"),
-            Settings {
-                element_content_handlers: vec![element!("p", |_el| {
-                    Err("handler error".into())
-                })],
-                ..Settings::new_send()
-            },
+            Settings::new_send().append_element_content_handler(element!("p", |_el| {
+                Err("handler error".into())
+            })),
         );
         let mut buf = String::new();
         let err = r.read_to_string(&mut buf).await.unwrap_err();

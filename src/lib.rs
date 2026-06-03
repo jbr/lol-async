@@ -8,47 +8,41 @@
     unused_qualifications
 )]
 
-/*!
-Async wrapper for
-[`cloudflare/lol-html`](https://github.com/cloudflare/lol-html).
+//! Async wrapper for
+//! [`cloudflare/lol-html`](https://github.com/cloudflare/lol-html).
+//!
+//! ```
+//! # use async_global_executor as your_async_executor;
+//! # use futures_lite::{io::Cursor, AsyncReadExt};
+//! use lol_async::html::{element, html_content::ContentType, send::Settings};
+//!
+//! # your_async_executor::block_on(async {
+//! let input = Cursor::new(
+//!     "<html><head><title>hello lol</title></head><body><h1>hey there</h1></body></html>",
+//! );
+//!
+//! let mut reader = lol_async::rewrite(
+//!     input,
+//!     Settings::new_send().append_element_content_handler(element!("h1", |el| {
+//!         el.append("<span>this was inserted</span>", ContentType::Html);
+//!         Ok(())
+//!     })),
+//! );
+//!
+//! let mut buf = String::new();
+//! reader.read_to_string(&mut buf).await?;
+//!
+//! assert_eq!(
+//!     buf,
+//!     "<html><head><title>hello lol</title></head><body><h1>hey there<span>this was \
+//!      inserted</span></h1></body></html>"
+//! );
+//! #     Result::<_, Box<dyn std::error::Error>>::Ok(()) }).unwrap();
+//! ```
 
-Since `lol-html` 2.x, [`lol_html::HtmlRewriter`] supports [`Send`]
-via the [`lol_html::send`] types. This crate wraps it in an
-[`AsyncRead`] implementation, feeding input from an inner async reader
-and producing rewritten HTML output.
-
-```
-# use async_global_executor as your_async_executor;
-# use futures_lite::{io::Cursor, AsyncReadExt};
-use lol_async::html::{element, html_content::ContentType, send::Settings};
-
-# your_async_executor::block_on(async {
-let mut reader = lol_async::rewrite(
-    Cursor::new(r#"<html>
-<head><title>hello lol</title></head>
-<body><h1>hey there</h1></body>
-</html>"#),
-    Settings {
-        element_content_handlers: vec![element!("h1", |el| {
-            el.append("<span>this was inserted</span>", ContentType::Html);
-            Ok(())
-        })],
-        ..Settings::new_send()
-    }
-);
-
-let mut buf = String::new();
-reader.read_to_string(&mut buf).await?;
-
-assert_eq!(buf, r#"<html>
-<head><title>hello lol</title></head>
-<body><h1>hey there<span>this was inserted</span></h1></body>
-</html>"#);
-# Result::<_, Box<dyn std::error::Error>>::Ok(()) }).unwrap();
-```
-*/
-
-use futures_lite::{AsyncRead, ready};
+use futures_lite::AsyncRead;
+pub use lol_html as html;
+pub use lol_html::send::Settings;
 use lol_html::{OutputSink, send::HtmlRewriter};
 use pin_project_lite::pin_project;
 use std::{
@@ -57,11 +51,8 @@ use std::{
     io::{self, Read},
     pin::Pin,
     sync::{Arc, Mutex},
-    task::{Context, Poll},
+    task::{Context, Poll, ready},
 };
-
-pub use lol_html as html;
-pub use lol_html::send::Settings;
 
 #[derive(Clone)]
 struct OutputBuffer(Arc<Mutex<VecDeque<u8>>>);
