@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1](https://github.com/jbr/lol-async/compare/v0.4.0...v0.4.1) - 2026-08-10
+
+### Other
+
+- Bump github/codeql-action from 4.37.3 to 4.37.6
+- Bump github/codeql-action from 4 to 4.37.3
+- Bump actions/checkout from 6 to 7
+
 ## [0.4.0] - 2026-06-03
 
 ### Added
