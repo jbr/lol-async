@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1](https://github.com/jbr/lol-async/compare/v0.4.0...v0.4.1) - 2026-09-24
+
+### Other
+
+- Merge pull request #50 from jbr/dependabot/github_actions/Swatinem/rust-cache-2.9.2
+- Bump github/codeql-action from 4.38.0 to 4.38.1
+- Bump github/codeql-action from 4.37.6 to 4.38.0
+- Bump github/codeql-action from 4.37.3 to 4.37.6
+- Bump github/codeql-action from 4 to 4.37.3
+- Bump actions/checkout from 6 to 7
+
 ## [0.4.0] - 2026-06-03
 
 ### Added
